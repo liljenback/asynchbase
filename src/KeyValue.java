@@ -64,6 +64,7 @@ public final class KeyValue implements Comparable<KeyValue> {
   private final byte[] family;  // Max length: Byte.MAX_VALUE  =   128
   private final byte[] qualifier;
   private final byte[] value;
+  private final byte[] tag;
   private final long timestamp;
   //private final byte type;  // Not needed for us ATM.
 
@@ -97,17 +98,43 @@ public final class KeyValue implements Comparable<KeyValue> {
                   final long timestamp,
                   //final byte type,
                   final byte[] value) {
+    this(key, family, qualifier, timestamp, value, null);
+  }
+
+
+  /**
+   * Constructor.
+   * @param key The row key.  Length must fit in 16 bits.
+   * @param family The column family.  Length must fit in 8 bits.
+   * @param qualifier The column qualifier.
+   * @param timestamp Timestamp on the value.  This timestamp can be set to
+   * guarantee ordering of values or operations.  It is strongly advised to
+   * use a UNIX timestamp in milliseconds, e.g. from a source such as
+   * {@link System#currentTimeMillis}.  This value must be strictly positive.
+   * @param value The value, the contents of the cell.
+   * @param tag The tag(s) to store with this value.
+   * @throws IllegalArgumentException if any argument is invalid (e.g. array
+   * size is too long) or if the timestamp is negative.
+   */
+  public KeyValue(final byte[] key,
+                  final byte[] family, final byte[] qualifier,
+                  final long timestamp,
+                  //final byte type,
+                  final byte[] value,
+                  final byte[] tag) {
     checkKey(key);
     checkFamily(family);
     checkQualifier(qualifier);
     checkTimestamp(timestamp);
     checkValue(value);
+    checkTag(tag);
     this.key = key;
     this.family = family;
     this.qualifier = qualifier;
     this.value = value;
     this.timestamp = timestamp;
     //this.type = type;
+    this.tag = tag;
   }
 
   /**
@@ -126,7 +153,28 @@ public final class KeyValue implements Comparable<KeyValue> {
   public KeyValue(final byte[] key,
                   final byte[] family, final byte[] qualifier,
                   final byte[] value) {
-    this(key, family, qualifier, TIMESTAMP_NOW, value);
+    this(key, family, qualifier, TIMESTAMP_NOW, value, null);
+  }
+
+  /**
+   * Constructor.
+   * <p>
+   * This {@code KeyValue} will be timestamped by the server at the time
+   * the server processes it.
+   * @param key The row key.  Length must fit in 16 bits.
+   * @param family The column family.  Length must fit in 8 bits.
+   * @param qualifier The column qualifier.
+   * @param value The value, the contents of the cell.
+   * @param tag The tag(s) to store with this value.
+   * @throws IllegalArgumentException if any argument is invalid (e.g. array
+   * size is too long).
+   * @see #TIMESTAMP_NOW
+   */
+  public KeyValue(final byte[] key,
+                  final byte[] family, final byte[] qualifier,
+                  final byte[] value,
+                  final byte[] tag) {
+    this(key, family, qualifier, TIMESTAMP_NOW, value, tag);
   }
 
   /** Returns the row key.  */
@@ -159,6 +207,11 @@ public final class KeyValue implements Comparable<KeyValue> {
   /** Returns the value, the contents of the cell.  */
   public byte[] value() {
     return value;
+  }
+
+  /** Returns the tag(s) associated with the cell.  */
+  public byte[] tag() {
+    return tag;
   }
 
   @Override
@@ -397,6 +450,13 @@ public final class KeyValue implements Comparable<KeyValue> {
     HBaseRpc.checkArrayLength(value);
   }
 
+  static void checkTag(final byte[] tag) {
+    if (tag == null) {
+      return;
+    }
+    Tag.checkTag(tag);
+  }
+  
   // ---------------------- //
   // Serialization helpers. //
   // ---------------------- //

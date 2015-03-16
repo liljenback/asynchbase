@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2012  The Async HBase Authors.  All rights reserved.
+ * Copyright (C) 2010-2015  The Async HBase Authors.  All rights reserved.
  * This file is part of Async HBase.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.hbase.async.generated.ClientPB.MutateRequest;
 import org.hbase.async.generated.ClientPB.MutateResponse;
 import org.hbase.async.generated.ClientPB.MutationProto;
+import org.hbase.async.generated.ClientPB.MutationProto.ColumnValue.QualifierValue.Builder;
 
 /**
  * Puts some data into HBase.
@@ -92,6 +93,8 @@ public final class PutRequest extends BatchableRpc
   private final byte[][] qualifiers;
   private final byte[][] values;
 
+  private final byte[][] tags;
+  
   /**
    * Constructor using current time.
    * <strong>These byte arrays will NOT be copied.</strong>
@@ -112,7 +115,7 @@ public final class PutRequest extends BatchableRpc
                     final byte[] family,
                     final byte[] qualifier,
                     final byte[] value) {
-    this(table, key, family, qualifier, value,
+    this(table, key, family, qualifier, value, null,
          KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
@@ -139,7 +142,7 @@ public final class PutRequest extends BatchableRpc
                     final byte[] family,
                     final byte[][] qualifiers,
                     final byte[][] values) {
-    this(table, key, family, qualifiers, values,
+    this(table, key, family, qualifiers, values, null, 
          KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
@@ -160,7 +163,7 @@ public final class PutRequest extends BatchableRpc
                     final byte[] qualifier,
                     final byte[] value,
                     final long timestamp) {
-    this(table, key, family, qualifier, value, timestamp, RowLock.NO_LOCK);
+    this(table, key, family, qualifier, value, null, timestamp, RowLock.NO_LOCK);
   }
 
   /**
@@ -182,7 +185,7 @@ public final class PutRequest extends BatchableRpc
                     final byte[][] qualifiers,
                     final byte[][] values,
                     final long timestamp) {
-    this(table, key, family, qualifiers, values, timestamp, RowLock.NO_LOCK);
+    this(table, key, family, qualifiers, values, null, timestamp, RowLock.NO_LOCK);
   }
 
   /**
@@ -207,7 +210,7 @@ public final class PutRequest extends BatchableRpc
                     final byte[] qualifier,
                     final byte[] value,
                     final RowLock lock) {
-    this(table, key, family, qualifier, value,
+    this(table, key, family, qualifier, value, null,
          KeyValue.TIMESTAMP_NOW, lock.id());
   }
 
@@ -230,9 +233,33 @@ public final class PutRequest extends BatchableRpc
                     final byte[] value,
                     final long timestamp,
                     final RowLock lock) {
-    this(table, key, family, qualifier, value, timestamp, lock.id());
+    this(table, key, family, qualifier, value, null, timestamp, lock.id());
   }
 
+  /** 
+   * Constructor using current time and an explicit row lock.
+   * <strong>These byte arrays will NOT be copied.</strong>
+   * @param table The table to edit.
+   * @param key The key of the row to edit in that table.
+   * @param family The column family to edit in that table.
+   * @param qualifier The column qualifier to edit in that family.
+   * @param value The value to store.
+   * @param tag The tag(s) to store with this value.
+   * @param timestamp The timestamp to set on this edit.
+   * @param lock An explicit row lock to use with this request.
+   * @since 1.7
+   */
+  public PutRequest(final byte[] table,
+                    final byte[] key,
+                    final byte[] family,
+                    final byte[] qualifier,
+                    final byte[] value,
+                    final byte[] tag,
+                    final long timestamp,
+                    final RowLock lock) {
+    this(table, key, family, qualifier, value, tag, timestamp, lock.id());
+  }
+  
   /**
    * Constructor for multiple columns with current time and explicit row lock.
    * <strong>These byte arrays will NOT be copied.</strong>
@@ -254,9 +281,36 @@ public final class PutRequest extends BatchableRpc
                     final byte[][] values,
                     final long timestamp,
                     final RowLock lock) {
-    this(table, key, family, qualifiers, values, timestamp, lock.id());
+    this(table, key, family, qualifiers, values, null, timestamp, lock.id());
   }
 
+  /**
+   * Constructor for multiple columns with current time and explicit row lock.
+   * <strong>These byte arrays will NOT be copied.</strong>
+   * @param table The table to edit.
+   * @param key The key of the row to edit in that table.
+   * @param family The column family to edit in that table.
+   * @param qualifiers The column qualifiers to edit in that family.
+   * @param values The corresponding values to store.
+   * @param tags The corresponding tags to store.
+   * @param timestamp The timestamp to set on this edit.
+   * @param lock An explicit row lock to use with this request.
+   * @throws IllegalArgumentException if {@code qualifiers.length == 0}
+   * or if {@code qualifiers.length != values.length}
+   * @since 1.7
+   */
+  public PutRequest(final byte[] table,
+                    final byte[] key,
+                    final byte[] family,
+                    final byte[][] qualifiers,
+                    final byte[][] values,
+                    final byte[][] tags,
+                    final long timestamp,
+                    final RowLock lock) {
+    this(table, key, family, qualifiers, values, tags, timestamp, lock.id());
+  }
+
+  
   /**
    * Convenience constructor from strings (higher overhead).
    * <p>
@@ -277,7 +331,7 @@ public final class PutRequest extends BatchableRpc
                     final String qualifier,
                     final String value) {
     this(table.getBytes(), key.getBytes(), family.getBytes(),
-         qualifier.getBytes(), value.getBytes(),
+         qualifier.getBytes(), value.getBytes(), null,
          KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
@@ -303,7 +357,7 @@ public final class PutRequest extends BatchableRpc
                     final String value,
                     final RowLock lock) {
     this(table.getBytes(), key.getBytes(), family.getBytes(),
-         qualifier.getBytes(), value.getBytes(),
+         qualifier.getBytes(), value.getBytes(), null,
          KeyValue.TIMESTAMP_NOW, lock.id());
   }
 
@@ -338,6 +392,9 @@ public final class PutRequest extends BatchableRpc
     super(table, kv.key(), kv.family(), kv.timestamp(), lockid);
     this.qualifiers = new byte[][] { kv.qualifier() };
     this.values = new byte[][] { kv.value() };
+    if (kv.tag() != null) {
+      this.tags = new byte[][] { kv.tag() };
+    }
   }
 
   /** Private constructor.  */
@@ -346,10 +403,11 @@ public final class PutRequest extends BatchableRpc
                      final byte[] family,
                      final byte[] qualifier,
                      final byte[] value,
+                     final byte[] tag,
                      final long timestamp,
                      final long lockid) {
     this(table, key, family, new byte[][] { qualifier }, new byte[][] { value },
-         timestamp, lockid);
+         tag == null ? null : new byte[][] { tag }, timestamp, lockid);
   }
 
   /** Private constructor.  */
@@ -358,6 +416,7 @@ public final class PutRequest extends BatchableRpc
                      final byte[] family,
                      final byte[][] qualifiers,
                      final byte[][] values,
+                     final byte[][] tags,
                      final long timestamp,
                      final long lockid) {
     super(table, key, family, timestamp, lockid);
@@ -368,12 +427,20 @@ public final class PutRequest extends BatchableRpc
     } else if (qualifiers.length == 0) {
       throw new IllegalArgumentException("Need at least one qualifier/value.");
     }
+    if (tags != null && tags.length != values.length) {
+        throw new IllegalArgumentException("Have " + tags.length
+                + " tags and " + values.length + " values.  Should be equal.");
+    }
     for (int i = 0; i < qualifiers.length; i++) {
       KeyValue.checkQualifier(qualifiers[i]);
       KeyValue.checkValue(values[i]);
+      if (tags != null) {
+        KeyValue.checkTag(tags[i]);
+      }
     }
     this.qualifiers = qualifiers;
     this.values = values;
+    this.tags = tags;
   }
 
   @Override
@@ -429,10 +496,14 @@ public final class PutRequest extends BatchableRpc
   public byte[][] values() {
     return values;
   }
+  
+  public byte[][] tags() {
+    return tags;
+  }
 
   public String toString() {
     return super.toStringWithQualifiers("PutRequest",
-                                       family, qualifiers, values,
+                                       family, qualifiers, values, tags,
                                        ", timestamp=" + timestamp
                                        + ", lockid=" + lockid
                                        + ", durable=" + durable
@@ -532,12 +603,14 @@ public final class PutRequest extends BatchableRpc
 
     // Now add all the qualifier-value pairs.
     for (int i = 0; i < qualifiers.length; i++) {
-      final MutationProto.ColumnValue.QualifierValue column =
-        MutationProto.ColumnValue.QualifierValue.newBuilder()
-        .setQualifier(Bytes.wrap(qualifiers[i]))
-        .setValue(Bytes.wrap(values[i]))
-        .setTimestamp(timestamp)
-        .build();
+        Builder builder = MutationProto.ColumnValue.QualifierValue.newBuilder();
+        builder.setQualifier(Bytes.wrap(qualifiers[i]))
+          .setValue(Bytes.wrap(values[i]))
+          .setTimestamp(timestamp);
+        if (tags != null) {
+          builder.setTags(Bytes.wrap(tags[i]));
+        }
+        final MutationProto.ColumnValue.QualifierValue column = builder.build();
       columns.addQualifierValue(column);
     }
 

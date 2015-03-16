@@ -50,12 +50,28 @@ public final class Bytes {
   private Bytes() {  // Can't instantiate.
   }
 
-  // ------------------------------ //
-  // Byte array conversion utilies. //
-  // ------------------------------ //
+  // --------------------- //
+  // Byte array utilities. //
+  // --------------------- //
 
   /**
-   * Reads a big-endian 2-byte short from the begining of the given array.
+   * Writes a byte at an offset in the given array.
+   * @param b The array to write to.
+   * @param offset The offset in the array to start writing at.
+   * @throws IndexOutOfBoundsException if the byte array is too small.
+   */
+  public static void setByte(final byte[] b, final byte n,
+          final int offset) {
+    b[offset] = n;
+  }
+
+  public static void setBytes(final byte[] dest, final byte[] src,
+		  final int offset) {
+    System.arraycopy(src, 0, dest, offset, src.length);
+  }
+  
+  /**
+   * Reads a big-endian 2-byte short from the beginning of the given array.
    * @param b The array to read from.
    * @return A short integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.
@@ -76,7 +92,7 @@ public final class Bytes {
   }
 
   /**
-   * Reads a big-endian 2-byte unsigned short from the begining of the
+   * Reads a big-endian 2-byte unsigned short from the beginning of the
    * given array.
    * @param b The array to read from.
    * @return A positive short integer.
@@ -99,7 +115,7 @@ public final class Bytes {
   }
 
   /**
-   * Writes a big-endian 2-byte short at the begining of the given array.
+   * Writes a big-endian 2-byte short at the beginning of the given array.
    * @param b The array to write to.
    * @param n A short integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.
@@ -132,7 +148,7 @@ public final class Bytes {
   }
 
   /**
-   * Reads a big-endian 4-byte integer from the begining of the given array.
+   * Reads a big-endian 4-byte integer from the beginning of the given array.
    * @param b The array to read from.
    * @return An integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.
@@ -156,7 +172,7 @@ public final class Bytes {
   }
 
   /**
-   * Reads a big-endian 4-byte unsigned integer from the begining of the
+   * Reads a big-endian 4-byte unsigned integer from the beginning of the
    * given array.
    * @param b The array to read from.
    * @return A positive integer.
@@ -179,7 +195,7 @@ public final class Bytes {
   }
 
   /**
-   * Writes a big-endian 4-byte int at the begining of the given array.
+   * Writes a big-endian 4-byte int at the beginning of the given array.
    * @param b The array to write to.
    * @param n An integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.
@@ -213,7 +229,7 @@ public final class Bytes {
   }
 
   /**
-   * Reads a big-endian 8-byte long from the begining of the given array.
+   * Reads a big-endian 8-byte long from the beginning of the given array.
    * @param b The array to read from.
    * @return A long integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.
@@ -241,7 +257,7 @@ public final class Bytes {
   }
 
   /**
-   * Writes a big-endian 8-byte long at the begining of the given array.
+   * Writes a big-endian 8-byte long at the beginning of the given array.
    * @param b The array to write to.
    * @param n A long integer.
    * @throws IndexOutOfBoundsException if the byte array is too small.

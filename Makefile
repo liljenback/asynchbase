@@ -109,6 +109,8 @@ asynchbase_SOURCES := \
 	src/SingletonList.java	\
 	src/SubstringComparator.java	\
 	src/TableNotFoundException.java	\
+	src/Tag.java	\
+	src/TimeToLiveTag.java	\
 	src/TimestampsFilter.java	\
 	src/UnknownRowLockException.java	\
 	src/UnknownScannerException.java	\

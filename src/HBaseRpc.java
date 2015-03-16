@@ -548,7 +548,7 @@ public abstract class HBaseRpc {
   final String toStringWithQualifiers(final String classname,
                                       final byte[] family,
                                       final byte[][] qualifiers) {
-    return toStringWithQualifiers(classname, family, qualifiers, null, "");
+    return toStringWithQualifiers(classname, family, qualifiers, null, null, "");
   }
 
 
@@ -561,12 +561,14 @@ public abstract class HBaseRpc {
    * @param family A possibly null family name.
    * @param qualifiers A non-empty list of qualifiers or null.
    * @param values A non-empty list of values or null.
+   * @param values A non-empty list of tags or null.
    * @param fields Additional fields to include in the output.
    */
   final String toStringWithQualifiers(final String classname,
                                       final byte[] family,
                                       final byte[][] qualifiers,
                                       final byte[][] values,
+                                      final byte[][] tags,
                                       final String fields) {
     final StringBuilder buf = new StringBuilder(256  // min=182
                                                 + fields.length());
@@ -581,6 +583,10 @@ public abstract class HBaseRpc {
     if (values != null) {
       buf.append(", values=");
       Bytes.pretty(buf, values);
+    }
+    if (tags != null) {
+        buf.append(", tags=");
+        Bytes.pretty(buf, tags);
     }
     buf.append(fields);
     buf.append(", attempt=").append(attempt)
