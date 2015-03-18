@@ -132,12 +132,12 @@ asynchbase_LIBADD := \
 test_SOURCES := \
 	test/Common.java	\
 	test/Test.java	\
-	test/TestIncrementCoalescing.java	\
-	test/TestIntegration.java	\
+#	test/TestIncrementCoalescing.java	\
+#	test/TestIntegration.java	\
 
 unittest_SRC := \
-	test/TestMETALookup.java	\
-	test/TestNSREs.java
+#	test/TestMETALookup.java	\
+#	test/TestNSREs.java
 
 test_LIBADD := \
 	$(asynchbase_LIBADD)	\

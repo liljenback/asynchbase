@@ -90,10 +90,11 @@ public final class PutRequest extends BatchableRpc
    *   - qualifiers.length == values.length
    *   - qualifiers.length > 0
    */
-  private final byte[][] qualifiers;
-  private final byte[][] values;
+  private final byte[][][] qualifiers;
+  private final byte[][][] values;
+  private final long[][] timestamps;
 
-  private final byte[][] tags;
+  private final byte[][][] tags;
   
   /**
    * Constructor using current time.
@@ -142,28 +143,8 @@ public final class PutRequest extends BatchableRpc
                     final byte[] family,
                     final byte[][] qualifiers,
                     final byte[][] values) {
-    this(table, key, family, qualifiers, values, null, 
-         KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
-  }
-
-  /**
-   * Constructor for a specific timestamp.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifier The column qualifier to edit in that family.
-   * @param value The value to store.
-   * @param timestamp The timestamp to set on this edit.
-   * @since 1.2
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[] qualifier,
-                    final byte[] value,
-                    final long timestamp) {
-    this(table, key, family, qualifier, value, null, timestamp, RowLock.NO_LOCK);
+    this(table, key, new byte[][] { family }, new byte[][][] { qualifiers },
+        new byte[][][] { values }, null, null, KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
   /**
@@ -171,146 +152,25 @@ public final class PutRequest extends BatchableRpc
    * <strong>These byte arrays will NOT be copied.</strong>
    * @param table The table to edit.
    * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
+   * @param families The column family to edit in that table.
    * @param qualifiers The column qualifiers to edit in that family.
    * @param values The corresponding values to store.
-   * @param timestamp The timestamp to set on this edit.
+   * @param timestamps The corresponding timestamps to store.
    * @throws IllegalArgumentException if {@code qualifiers.length == 0}
    * or if {@code qualifiers.length != values.length}
    * @since 1.3
    */
   public PutRequest(final byte[] table,
                     final byte[] key,
-                    final byte[] family,
-                    final byte[][] qualifiers,
-                    final byte[][] values,
-                    final long timestamp) {
-    this(table, key, family, qualifiers, values, null, timestamp, RowLock.NO_LOCK);
+                    final byte[][] families,
+                    final byte[][][] qualifiers,
+                    final byte[][][] values,
+// TODO: add tags here
+                    final long[][] timestamps) {
+    this(table, key, families, qualifiers, values, null, timestamps,
+        KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
-  /**
-   * Constructor using an explicit row lock.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * <p>
-   * Note: If you want to set your own timestamp, use
-   * {@link #PutRequest(byte[], byte[], byte[], byte[], byte[], long, RowLock)}
-   * instead.  This constructor will let the RegionServer assign the timestamp
-   * to this write at the time using {@link System#currentTimeMillis} right
-   * before the write is persisted to the WAL.
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifier The column qualifier to edit in that family.
-   * @param value The value to store.
-   * @param lock An explicit row lock to use with this request.
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[] qualifier,
-                    final byte[] value,
-                    final RowLock lock) {
-    this(table, key, family, qualifier, value, null,
-         KeyValue.TIMESTAMP_NOW, lock.id());
-  }
-
-  /**
-   * Constructor using current time and an explicit row lock.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifier The column qualifier to edit in that family.
-   * @param value The value to store.
-   * @param timestamp The timestamp to set on this edit.
-   * @param lock An explicit row lock to use with this request.
-   * @since 1.2
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[] qualifier,
-                    final byte[] value,
-                    final long timestamp,
-                    final RowLock lock) {
-    this(table, key, family, qualifier, value, null, timestamp, lock.id());
-  }
-
-  /** 
-   * Constructor using current time and an explicit row lock.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifier The column qualifier to edit in that family.
-   * @param value The value to store.
-   * @param tag The tag(s) to store with this value.
-   * @param timestamp The timestamp to set on this edit.
-   * @param lock An explicit row lock to use with this request.
-   * @since 1.7
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[] qualifier,
-                    final byte[] value,
-                    final byte[] tag,
-                    final long timestamp,
-                    final RowLock lock) {
-    this(table, key, family, qualifier, value, tag, timestamp, lock.id());
-  }
-  
-  /**
-   * Constructor for multiple columns with current time and explicit row lock.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifiers The column qualifiers to edit in that family.
-   * @param values The corresponding values to store.
-   * @param timestamp The timestamp to set on this edit.
-   * @param lock An explicit row lock to use with this request.
-   * @throws IllegalArgumentException if {@code qualifiers.length == 0}
-   * or if {@code qualifiers.length != values.length}
-   * @since 1.3
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[][] qualifiers,
-                    final byte[][] values,
-                    final long timestamp,
-                    final RowLock lock) {
-    this(table, key, family, qualifiers, values, null, timestamp, lock.id());
-  }
-
-  /**
-   * Constructor for multiple columns with current time and explicit row lock.
-   * <strong>These byte arrays will NOT be copied.</strong>
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifiers The column qualifiers to edit in that family.
-   * @param values The corresponding values to store.
-   * @param tags The corresponding tags to store.
-   * @param timestamp The timestamp to set on this edit.
-   * @param lock An explicit row lock to use with this request.
-   * @throws IllegalArgumentException if {@code qualifiers.length == 0}
-   * or if {@code qualifiers.length != values.length}
-   * @since 1.7
-   */
-  public PutRequest(final byte[] table,
-                    final byte[] key,
-                    final byte[] family,
-                    final byte[][] qualifiers,
-                    final byte[][] values,
-                    final byte[][] tags,
-                    final long timestamp,
-                    final RowLock lock) {
-    this(table, key, family, qualifiers, values, tags, timestamp, lock.id());
-  }
-
-  
   /**
    * Convenience constructor from strings (higher overhead).
    * <p>
@@ -335,68 +195,6 @@ public final class PutRequest extends BatchableRpc
          KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
-  /**
-   * Convenience constructor with explicit row lock (higher overhead).
-   * <p>
-   * Note: If you want to set your own timestamp, use
-   * {@link #PutRequest(byte[], byte[], byte[], byte[], byte[], long, RowLock)}
-   * instead.  This constructor will let the RegionServer assign the timestamp
-   * to this write at the time using {@link System#currentTimeMillis} right
-   * before the write is persisted to the WAL.
-   * @param table The table to edit.
-   * @param key The key of the row to edit in that table.
-   * @param family The column family to edit in that table.
-   * @param qualifier The column qualifier to edit in that family.
-   * @param value The value to store.
-   * @param lock An explicit row lock to use with this request.
-   */
-  public PutRequest(final String table,
-                    final String key,
-                    final String family,
-                    final String qualifier,
-                    final String value,
-                    final RowLock lock) {
-    this(table.getBytes(), key.getBytes(), family.getBytes(),
-         qualifier.getBytes(), value.getBytes(), null,
-         KeyValue.TIMESTAMP_NOW, lock.id());
-  }
-
-  /**
-   * Constructor from a {@link KeyValue}.
-   * @param table The table to edit.
-   * @param kv The {@link KeyValue} to store.
-   * @since 1.1
-   */
-  public PutRequest(final byte[] table,
-                    final KeyValue kv) {
-    this(table, kv, RowLock.NO_LOCK);
-  }
-
-  /**
-   * Constructor from a {@link KeyValue} with an explicit row lock.
-   * @param table The table to edit.
-   * @param kv The {@link KeyValue} to store.
-   * @param lock An explicit row lock to use with this request.
-   * @since 1.1
-   */
-  public PutRequest(final byte[] table,
-                    final KeyValue kv,
-                    final RowLock lock) {
-    this(table, kv, lock.id());
-  }
-
-  /** Private constructor.  */
-  private PutRequest(final byte[] table,
-                     final KeyValue kv,
-                     final long lockid) {
-    super(table, kv.key(), kv.family(), kv.timestamp(), lockid);
-    this.qualifiers = new byte[][] { kv.qualifier() };
-    this.values = new byte[][] { kv.value() };
-    if (kv.tag() != null) {
-      this.tags = new byte[][] { kv.tag() };
-    }
-  }
-
   /** Private constructor.  */
   private PutRequest(final byte[] table,
                      final byte[] key,
@@ -406,20 +204,78 @@ public final class PutRequest extends BatchableRpc
                      final byte[] tag,
                      final long timestamp,
                      final long lockid) {
-    this(table, key, family, new byte[][] { qualifier }, new byte[][] { value },
-         tag == null ? null : new byte[][] { tag }, timestamp, lockid);
+    this(table, key, new byte[][] { family }, new byte[][][] { { qualifier } },
+        new byte[][][] { { value } }, tag == null ? null : new byte[][][] { { tag } }, null, timestamp, lockid);
   }
 
   /** Private constructor.  */
   private PutRequest(final byte[] table,
                      final byte[] key,
-                     final byte[] family,
-                     final byte[][] qualifiers,
-                     final byte[][] values,
-                     final byte[][] tags,
+                     final byte[][] families,
+                     final byte[][][] qualifiers,
+                     final byte[][][] values,
+                     final byte[][][] tags,
+                     final long[][] timestamps,
                      final long timestamp,
                      final long lockid) {
-    super(table, key, family, timestamp, lockid);
+    super(table, key, families, timestamp, lockid);
+    checkParams(families, qualifiers, values, tags, timestamps);
+    this.qualifiers = qualifiers;
+    this.values = values;
+    this.tags = tags;
+    this.timestamps = timestamps;
+  }
+
+  private void checkParams(final byte[][] families,
+                           final byte[][][] qualifiers,
+                           final byte[][][] values,
+                           final byte[][][] tags,  // TODO check tags
+                           final long[][] timestamps) {
+    if (families.length != qualifiers.length) {
+      throw new IllegalArgumentException(String.format(
+          "Mismatch in number of families(%d) and qualifiers(%d) array size.",
+          families.length, qualifiers.length));
+    } else if (families.length != values.length) {
+      throw new IllegalArgumentException(String.format(
+          "Mismatch in number of families(%d) and values(%d) array size.",
+          families.length, values.length));
+    } else if (timestamps != null && families.length != timestamps.length) {
+      throw new IllegalArgumentException(String.format(
+          "Mismatch in number of families(%d) and timestamps(%d) array size.",
+          families.length, timestamps.length));
+    }
+
+    for (int idx = 0; idx < families.length; idx++) {
+      KeyValue.checkFamily(families[idx]);
+      if (qualifiers[idx] == null || qualifiers[idx].length == 0) {
+        throw new IllegalArgumentException(
+            "No qualifiers are specifed for family "
+            + families[idx] + " at index " + idx);
+      } else if (values[idx] == null || values[idx].length == 0) {
+        throw new IllegalArgumentException(
+            "No values are specifed for family "
+            + families[idx] + " at index " + idx);
+      } else if (qualifiers[idx].length != values[idx].length) {
+        throw new IllegalArgumentException("Found "
+            + qualifiers[idx].length + " qualifiers and "
+            + values[idx].length + " values for family "
+            + families[idx] + " at index " + idx + ". Should be equal.");
+      } else if (timestamps != null) { // check timestamps if specified
+        if (qualifiers[idx].length != timestamps[idx].length) {
+          throw new IllegalArgumentException("Found "
+              + qualifiers[idx].length + " qualifiers and "
+              + timestamps[idx].length + " timestamps for family "
+              + families[idx] + " at index " + idx + ". Should be equal.");
+        }
+      }
+      for (int i = 0; i < qualifiers[idx].length; i++) {
+        KeyValue.checkQualifier(qualifiers[idx][i]);
+        KeyValue.checkValue(values[idx][i]);
+      }
+    }
+  }
+
+/*
     KeyValue.checkFamily(family);
     if (qualifiers.length != values.length) {
       throw new IllegalArgumentException("Have " + qualifiers.length
@@ -438,10 +294,7 @@ public final class PutRequest extends BatchableRpc
         KeyValue.checkTag(tags[i]);
       }
     }
-    this.qualifiers = qualifiers;
-    this.values = values;
-    this.tags = tags;
-  }
+*/
 
   @Override
   byte[] method(final byte server_version) {
@@ -467,15 +320,25 @@ public final class PutRequest extends BatchableRpc
    */
   @Override
   public byte[] qualifier() {
+    return qualifiers[0][0];
+  }
+
+  /**
+   * Returns the qualifiers of first column family in the set of
+   * edits in this RPC.
+   * @since 1.3
+   */
+  @Override
+  public byte[][] qualifiers() {
     return qualifiers[0];
   }
 
   /**
    * {@inheritDoc}
-   * @since 1.3
+   * @since 1.5
    */
   @Override
-  public byte[][] qualifiers() {
+  public byte[][][] getQualifiers() {
     return qualifiers;
   }
 
@@ -485,7 +348,7 @@ public final class PutRequest extends BatchableRpc
    */
   @Override
   public byte[] value() {
-    return values[0];
+    return values[0][0];
   }
 
   /**
@@ -494,16 +357,29 @@ public final class PutRequest extends BatchableRpc
    */
   @Override
   public byte[][] values() {
+    return values[0];
+  }
+
+  /**
+   * {@inheritDoc}
+   * @since 1.5
+   */
+  @Override
+  public byte[][][] getValues() {
     return values;
   }
   
   public byte[][] tags() {
+    return tags == null ? null : tags[0];
+  }
+
+  public byte[][][] getTags() {
     return tags;
   }
 
   public String toString() {
     return super.toStringWithQualifiers("PutRequest",
-                                       family, qualifiers, values, tags,
+                                       families, qualifiers, values, tags, timestamps,
                                        ", timestamp=" + timestamp
                                        + ", lockid=" + lockid
                                        + ", durable=" + durable
@@ -533,23 +409,33 @@ public final class PutRequest extends BatchableRpc
 
   @Override
   int numKeyValues() {
-    return qualifiers.length;
+    return qualifiers[0].length;
   }
 
   @Override
   int payloadSize() {
+    return payloadSize(0);
+  }
+
+  int payloadSize(int idx) {
     int size = 0;
-    for (int i = 0; i < qualifiers.length; i++) {
-      size += KeyValue.predictSerializedSize(key, family, qualifiers[i], values[i]);
+    for (int i = 0; i < qualifiers[idx].length; i++) {
+      size += KeyValue.predictSerializedSize(
+          key, families[idx], qualifiers[idx][i], values[idx][i]);
     }
     return size;
   }
 
   @Override
   void serializePayload(final ChannelBuffer buf) {
-    for (int i = 0; i < qualifiers.length; i++) {
-      KeyValue.serialize(buf, KeyValue.PUT, timestamp, key, family,
-                         qualifiers[i], values[i]);
+    serializePayload(buf, 0);
+  }
+
+  private void serializePayload(final ChannelBuffer buf, int idx) {
+    for (int i = 0; i < qualifiers[idx].length; i++) {
+      KeyValue.serialize(buf, KeyValue.PUT,
+          timestamps == null ? timestamp : timestamps[idx][i],
+          key, families[idx], qualifiers[idx][i], values[idx][i]);
     }
   }
 
@@ -585,42 +471,54 @@ public final class PutRequest extends BatchableRpc
     size += 1;  // bool: Whether or not to write to the WAL.
     size += 4;  // int:  Number of families for which we have edits.
 
-    size += 1;  // vint: Family length (guaranteed on 1 byte).
-    size += family.length;  // The family.
-    size += 4;  // int:  Number of KeyValues that follow.
-    size += 4;  // int:  Total number of bytes for all those KeyValues.
-
-    size += payloadSize();
+    size += payloadsSize();
 
     return size;
   }
 
   @Override
-  MutationProto toMutationProto() {
-    final MutationProto.ColumnValue.Builder columns =  // All columns ...
-      MutationProto.ColumnValue.newBuilder()
-      .setFamily(Bytes.wrap(family));                  // ... for this family.
-
-    // Now add all the qualifier-value pairs.
-    for (int i = 0; i < qualifiers.length; i++) {
-        Builder builder = MutationProto.ColumnValue.QualifierValue.newBuilder();
-        builder.setQualifier(Bytes.wrap(qualifiers[i]))
-          .setValue(Bytes.wrap(values[i]))
-          .setTimestamp(timestamp);
-        if (tags != null) {
-          builder.setTags(Bytes.wrap(tags[i]));
-        }
-        final MutationProto.ColumnValue.QualifierValue column = builder.build();
-      columns.addQualifierValue(column);
+  int payloadsSize() {
+    int size = 0;
+    for (int i = 0; i < families.length; i++) {
+      size += 1;  // vint: Family length (guaranteed on 1 byte).
+      size += families[i].length;  // The family.
+      size += 4;  // int:  Number of KeyValues that follow.
+      size += 4;  // int:  Total number of bytes for all those KeyValues.
+      size += payloadSize(i);
     }
+    return size;
+  }
 
+  @Override
+  MutationProto toMutationProto() {
     final MutationProto.Builder put = MutationProto.newBuilder()
       .setRow(Bytes.wrap(key))
-      .setMutateType(MutationProto.MutationType.PUT)
-      .addColumnValue(columns);
+      .setMutateType(MutationProto.MutationType.PUT);
     if (!durable) {
       put.setDurability(MutationProto.Durability.SKIP_WAL);
     }
+
+    final MutationProto.ColumnValue.Builder columns =
+      MutationProto.ColumnValue.newBuilder();
+    for (int family_idx = 0; family_idx < families.length; family_idx++) {
+      columns.clear();
+      columns.setFamily(Bytes.wrap(families[family_idx])); // ... for this family.
+
+      // Now add all the qualifier-value pairs.
+      for (int i = 0; i < qualifiers[family_idx].length; i++) {
+        Builder builder = MutationProto.ColumnValue.QualifierValue.newBuilder();
+        builder.setQualifier(Bytes.wrap(qualifiers[family_idx][i]))
+          .setValue(Bytes.wrap(values[family_idx][i]))
+          .setTimestamp(timestamps == null ? timestamp : timestamps[family_idx][i]);
+        if (tags != null) {
+          builder.setTags(Bytes.wrap(tags[family_idx][i]));
+        }
+        final MutationProto.ColumnValue.QualifierValue column = builder.build();
+        columns.addQualifierValue(column);
+      }
+      put.addColumnValue(columns);
+    }
+
     return put.build();
   }
 
@@ -672,12 +570,19 @@ public final class PutRequest extends BatchableRpc
     buf.writeLong(lockid);    // Lock ID.
     buf.writeByte(durable ? 0x01 : 0x00);  // Whether or not to use the WAL.
 
-    buf.writeInt(1);  // Number of families that follow.
-    writeByteArray(buf, family);  // The column family.
+    buf.writeInt(families.length);  // Number of families that follow.
+    serializePayloads(buf);
+  }
 
-    buf.writeInt(qualifiers.length);  // Number of "KeyValues" that follow.
-    buf.writeInt(payloadSize());  // Size of the KV that follows.
-    serializePayload(buf);
+  @Override
+  void serializePayloads(ChannelBuffer buf) {
+    for (int i = 0; i < families.length; i++) {
+      writeByteArray(buf, families[i]);  // The column family.
+
+      buf.writeInt(qualifiers[i].length);  // Number of "KeyValues" that follow.
+      buf.writeInt(payloadSize(i));  // Size of the KV that follows.
+      serializePayload(buf, i);
+    }
   }
 
 }
