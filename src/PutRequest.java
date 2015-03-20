@@ -165,9 +165,9 @@ public final class PutRequest extends BatchableRpc
                     final byte[][] families,
                     final byte[][][] qualifiers,
                     final byte[][][] values,
-// TODO: add tags here
+                    final byte[][][] tags,
                     final long[][] timestamps) {
-    this(table, key, families, qualifiers, values, null, timestamps,
+    this(table, key, families, qualifiers, values, tags, timestamps,
         KeyValue.TIMESTAMP_NOW, RowLock.NO_LOCK);
   }
 
@@ -229,7 +229,7 @@ public final class PutRequest extends BatchableRpc
   private void checkParams(final byte[][] families,
                            final byte[][][] qualifiers,
                            final byte[][][] values,
-                           final byte[][][] tags,  // TODO check tags
+                           final byte[][][] tags,
                            final long[][] timestamps) {
     if (families.length != qualifiers.length) {
       throw new IllegalArgumentException(String.format(
@@ -260,6 +260,11 @@ public final class PutRequest extends BatchableRpc
             + qualifiers[idx].length + " qualifiers and "
             + values[idx].length + " values for family "
             + families[idx] + " at index " + idx + ". Should be equal.");
+      } else if (tags != null && tags[idx].length != values[idx].length) {
+        throw new IllegalArgumentException("Found "
+            + values[idx].length + " values and "
+            + tags[idx].length + " tags for family "
+            + families[idx] + " at index " + idx + ". Should be equal.");
       } else if (timestamps != null) { // check timestamps if specified
         if (qualifiers[idx].length != timestamps[idx].length) {
           throw new IllegalArgumentException("Found "
@@ -271,6 +276,9 @@ public final class PutRequest extends BatchableRpc
       for (int i = 0; i < qualifiers[idx].length; i++) {
         KeyValue.checkQualifier(qualifiers[idx][i]);
         KeyValue.checkValue(values[idx][i]);
+        if (tags != null) {
+          KeyValue.checkTag(tags[idx][i]);
+        }
       }
     }
   }
