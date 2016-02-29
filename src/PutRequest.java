@@ -395,6 +395,9 @@ public final class PutRequest extends BatchableRpc
     if (kv.tag() != null) {
       this.tags = new byte[][] { kv.tag() };
     }
+    else {
+    	this.tags = null;
+    }
   }
 
   /** Private constructor.  */
